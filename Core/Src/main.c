@@ -118,14 +118,6 @@ int main(void) {
 	MX_I2C1_Init();
 	/* USER CODE BEGIN 2 */
 	/* USER CODE BEGIN 2 */
-	SSD1306_Init();
-	SSD1306_GotoXY(0, 0);
-	//SSD1306_Puts ("Voltage:", &Font_11x18, 1);
-	SSD1306_Puts("Enter Code:", &Font_11x18, 1);
-	SSD1306_GotoXY(0, 30);
-	SSD1306_UpdateScreen();
-	SSD1306_UpdateScreen();
-	HAL_Delay(500);
 
 	/* USER CODE END 2 */
 
@@ -315,14 +307,14 @@ static void MX_GPIO_Init(void) {
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 
 	/*Configure GPIO pin Output Level */
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
 
 	/*Configure GPIO pin Output Level */
 	HAL_GPIO_WritePin(GPIOB, KC0_Pin | KC3_Pin | KC1_Pin | KC2_Pin,
 			GPIO_PIN_RESET);
 
-	/*Configure GPIO pin : PA5 */
-	GPIO_InitStruct.Pin = GPIO_PIN_5;
+	/*Configure GPIO pins : PA5 PA6 */
+	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -402,9 +394,26 @@ void StartLCDTask(void *argument) {
 /* USER CODE END Header_StartLEDsTask */
 void StartLEDsTask(void *argument) {
 	/* USER CODE BEGIN StartLEDsTask */
+
 	/* Infinite loop */
 	for (;;) {
-		osDelay(1);
+		// Not armed
+		while (!armed) {
+			// Turn on Green LED
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
+
+			// Turn off Red LED
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		}
+
+		// Armed
+		while (armed) {
+			// Turn off Green LED
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
+
+			// Turn on Red LED
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		}
 	}
 	/* USER CODE END StartLEDsTask */
 }
