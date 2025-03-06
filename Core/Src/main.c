@@ -74,7 +74,9 @@ const osThreadAttr_t LEDsTask_attributes = {
 };
 /* USER CODE BEGIN PV */
 extern char key;
-char hold[4];
+char hold[5];
+int armed = 0;
+char armed_messages[2][10] = {"Not Armed", "Armed"};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -180,14 +182,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		/* D10 to D7 as input pins for row 0 to row 3. D6 to D3 as output for column pins C1 to C3*/
-		key = Get_Key();
-		sprintf(hold, "%c", key);
-		HAL_UART_Transmit(&huart2, (uint8_t*) hold, strlen(hold), 100);
-		SSD1306_GotoXY(0, 30);
-		SSD1306_UpdateScreen();
-		SSD1306_Puts(hold, &Font_11x18, 1);
-		SSD1306_UpdateScreen();
-		HAL_Delay(500);
+
 	}
   /* USER CODE END 3 */
 }
@@ -376,14 +371,40 @@ static void MX_GPIO_Init(void)
  * @retval None
  */
 /* USER CODE END Header_StartKeypadTask */
-void StartKeypadTask(void *argument)
-{
-  /* USER CODE BEGIN 5 */
+void StartKeypadTask(void *argument) {
+	/* USER CODE BEGIN 5 */
 	/* Infinite loop */
+
+	char code[5];
+	int numInputs = 0;
+
 	for (;;) {
-		osDelay(1);
+		key = Get_Key();
+		hold[numInputs] = key;
+		numInputs++;
+
+		if(numInputs == 4) {
+			if(armed == 0) {
+				strcpy(code, hold);
+				armed = 1;
+
+			} else {
+				if(strcmp(code, hold) == 0) {
+					armed = 0;
+					for(int i = 0; i < 4; i++) {
+						code[i] = '\0';
+					}
+				}
+			}
+
+			for(int i = 0; i < 4; i++) {
+				hold[i] = '\0';
+			}
+			numInputs = 0;
+		}
 	}
-  /* USER CODE END 5 */
+
+	/* USER CODE END 5 */
 }
 
 /* USER CODE BEGIN Header_StartLCDTask */
@@ -393,14 +414,37 @@ void StartKeypadTask(void *argument)
  * @retval None
  */
 /* USER CODE END Header_StartLCDTask */
-void StartLCDTask(void *argument)
-{
-  /* USER CODE BEGIN StartLCDTask */
+void StartLCDTask(void *argument) {
+	/* USER CODE BEGIN StartLCDTask */
+	SSD1306_Init();
 	/* Infinite loop */
 	for (;;) {
-		osDelay(1);
+		SSD1306_Fill(SSD1306_COLOR_BLACK);
+		SSD1306_GotoXY(0, 0);
+		SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
+
+		if(strlen(hold) > 0) {
+
+			char stars[4][5] = {"*", "**", "***", "****"};
+
+			SSD1306_GotoXY(0, 30);
+			SSD1306_Puts(stars[strlen(hold) - 1], &Font_11x18, 1);
+		}
+
+		SSD1306_UpdateScreen();
 	}
-  /* USER CODE END StartLCDTask */
+
+	/*
+	 * SSD1306_Init();
+	SSD1306_GotoXY(0, 0);
+	//SSD1306_Puts ("Voltage:", &Font_11x18, 1);
+	SSD1306_Puts("Enter Code:", &Font_11x18, 1);
+	SSD1306_GotoXY(0, 30);
+	SSD1306_UpdateScreen();
+	SSD1306_UpdateScreen();
+	HAL_Delay(500);
+	 */
+	/* USER CODE END StartLCDTask */
 }
 
 /* USER CODE BEGIN Header_StartLEDsTask */
@@ -414,12 +458,10 @@ void StartLEDsTask(void *argument)
 {
   /* USER CODE BEGIN StartLEDsTask */
 
-	int armed = 1;
-
 	/* Infinite loop */
 	for (;;) {
 		// Not armed
-		while (!armed) {
+		while (armed) {
 			// Turn on Green LED
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 
@@ -428,7 +470,7 @@ void StartLEDsTask(void *argument)
 		}
 
 		// Armed
-		while (armed) {
+		while (!armed) {
 			// Turn off Green LED
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
 
