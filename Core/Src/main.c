@@ -72,6 +72,20 @@ const osThreadAttr_t LEDsTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for PIRTask */
+osThreadId_t PIRTaskHandle;
+const osThreadAttr_t PIRTask_attributes = {
+  .name = "PIRTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for BuzzerTask */
+osThreadId_t BuzzerTaskHandle;
+const osThreadAttr_t BuzzerTask_attributes = {
+  .name = "BuzzerTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
 /* USER CODE BEGIN PV */
 extern char key;
 char hold[5];
@@ -87,6 +101,8 @@ static void MX_I2C1_Init(void);
 void StartKeypadTask(void *argument);
 void StartLCDTask(void *argument);
 void StartLEDsTask(void *argument);
+void StartPIRTask(void *argument);
+void StartBuzzerTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -161,6 +177,12 @@ int main(void)
 
   /* creation of LEDsTask */
   LEDsTaskHandle = osThreadNew(StartLEDsTask, NULL, &LEDsTask_attributes);
+
+  /* creation of PIRTask */
+  PIRTaskHandle = osThreadNew(StartPIRTask, NULL, &PIRTask_attributes);
+
+  /* creation of BuzzerTask */
+  BuzzerTaskHandle = osThreadNew(StartBuzzerTask, NULL, &BuzzerTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -319,13 +341,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6|GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, Buzzer_Pin|GPIO_PIN_6|PIR_Sensor_Pin|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, KC0_Pin|KC3_Pin|KC1_Pin|KC2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : PA6 PA10 */
-  GPIO_InitStruct.Pin = GPIO_PIN_6|GPIO_PIN_10;
+  /*Configure GPIO pins : Buzzer_Pin PA6 PIR_Sensor_Pin PA10 */
+  GPIO_InitStruct.Pin = Buzzer_Pin|GPIO_PIN_6|PIR_Sensor_Pin|GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -371,8 +393,9 @@ static void MX_GPIO_Init(void)
  * @retval None
  */
 /* USER CODE END Header_StartKeypadTask */
-void StartKeypadTask(void *argument) {
-	/* USER CODE BEGIN 5 */
+void StartKeypadTask(void *argument)
+{
+  /* USER CODE BEGIN 5 */
 	/* Infinite loop */
 
 	char code[5];
@@ -404,7 +427,7 @@ void StartKeypadTask(void *argument) {
 		}
 	}
 
-	/* USER CODE END 5 */
+  /* USER CODE END 5 */
 }
 
 /* USER CODE BEGIN Header_StartLCDTask */
@@ -414,8 +437,9 @@ void StartKeypadTask(void *argument) {
  * @retval None
  */
 /* USER CODE END Header_StartLCDTask */
-void StartLCDTask(void *argument) {
-	/* USER CODE BEGIN StartLCDTask */
+void StartLCDTask(void *argument)
+{
+  /* USER CODE BEGIN StartLCDTask */
 	SSD1306_Init();
 	/* Infinite loop */
 	for (;;) {
@@ -444,7 +468,7 @@ void StartLCDTask(void *argument) {
 	SSD1306_UpdateScreen();
 	HAL_Delay(500);
 	 */
-	/* USER CODE END StartLCDTask */
+  /* USER CODE END StartLCDTask */
 }
 
 /* USER CODE BEGIN Header_StartLEDsTask */
@@ -479,6 +503,42 @@ void StartLEDsTask(void *argument)
 		}
 	}
   /* USER CODE END StartLEDsTask */
+}
+
+/* USER CODE BEGIN Header_StartPIRTask */
+/**
+* @brief Function implementing the PIRTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartPIRTask */
+void StartPIRTask(void *argument)
+{
+  /* USER CODE BEGIN StartPIRTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartPIRTask */
+}
+
+/* USER CODE BEGIN Header_StartBuzzerTask */
+/**
+* @brief Function implementing the BuzzerTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartBuzzerTask */
+void StartBuzzerTask(void *argument)
+{
+  /* USER CODE BEGIN StartBuzzerTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END StartBuzzerTask */
 }
 
 /**
