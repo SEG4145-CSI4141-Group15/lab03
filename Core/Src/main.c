@@ -49,8 +49,6 @@
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
 
-UART_HandleTypeDef huart2;
-
 /* Definitions for KeypadTask */
 osThreadId_t KeypadTaskHandle;
 const osThreadAttr_t KeypadTask_attributes = {
@@ -96,7 +94,6 @@ char armed_messages[2][10] = {"Not Armed", "Armed"};
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 void StartKeypadTask(void *argument);
 void StartLCDTask(void *argument);
@@ -142,7 +139,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
 	/* USER CODE BEGIN 2 */
@@ -291,39 +287,6 @@ static void MX_I2C1_Init(void)
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART2_Init 0 */
-
-  /* USER CODE END USART2_Init 0 */
-
-  /* USER CODE BEGIN USART2_Init 1 */
-
-  /* USER CODE END USART2_Init 1 */
-  huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
-  huart2.Init.WordLength = UART_WORDLENGTH_8B;
-  huart2.Init.StopBits = UART_STOPBITS_1;
-  huart2.Init.Parity = UART_PARITY_NONE;
-  huart2.Init.Mode = UART_MODE_TX_RX;
-  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART2_Init 2 */
-
-  /* USER CODE END USART2_Init 2 */
-
-}
-
-/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -341,13 +304,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, Buzzer_Pin|GPIO_PIN_6|PIR_Sensor_Pin|GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3|GPIO_PIN_6|PIR_Sensor_Pin|GPIO_PIN_10, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, KC0_Pin|KC3_Pin|KC1_Pin|KC2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : Buzzer_Pin PA6 PIR_Sensor_Pin PA10 */
-  GPIO_InitStruct.Pin = Buzzer_Pin|GPIO_PIN_6|PIR_Sensor_Pin|GPIO_PIN_10;
+  /*Configure GPIO pins : PA3 PA6 PIR_Sensor_Pin PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3|GPIO_PIN_6|PIR_Sensor_Pin|GPIO_PIN_10;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -507,7 +470,7 @@ void StartLEDsTask(void *argument)
 
 /* USER CODE BEGIN Header_StartPIRTask */
 /**
-* @brief Function implementing the PIRTask thread.
+* @brief Function implementing the PIRTask threadx`
 * @param argument: Not used
 * @retval None
 */
