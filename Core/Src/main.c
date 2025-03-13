@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "semphr.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -52,7 +53,7 @@ I2C_HandleTypeDef hi2c1;
 /* Definitions for KeypadTask */
 osThreadId_t KeypadTaskHandle;
 const osThreadAttr_t KeypadTask_attributes = { .name = "KeypadTask",
-		.stack_size = 128 * 4, .priority = (osPriority_t) osPriorityNormal, };
+		.stack_size = 512 * 4, .priority = (osPriority_t) osPriorityHigh, };
 /* Definitions for LCDTask */
 osThreadId_t LCDTaskHandle;
 const osThreadAttr_t LCDTask_attributes = { .name = "LCDTask", .stack_size = 512
@@ -60,15 +61,15 @@ const osThreadAttr_t LCDTask_attributes = { .name = "LCDTask", .stack_size = 512
 /* Definitions for LEDsTask */
 osThreadId_t LEDsTaskHandle;
 const osThreadAttr_t LEDsTask_attributes = { .name = "LEDsTask", .stack_size =
-		128 * 4, .priority = (osPriority_t) osPriorityNormal, };
+		512 * 4, .priority = (osPriority_t) osPriorityNormal, };
 /* Definitions for PIRTask */
 osThreadId_t PIRTaskHandle;
-const osThreadAttr_t PIRTask_attributes = { .name = "PIRTask", .stack_size = 128
+const osThreadAttr_t PIRTask_attributes = { .name = "PIRTask", .stack_size = 512
 		* 4, .priority = (osPriority_t) osPriorityNormal, };
 /* Definitions for BuzzerTask */
 osThreadId_t BuzzerTaskHandle;
 const osThreadAttr_t BuzzerTask_attributes = { .name = "BuzzerTask",
-		.stack_size = 128 * 4, .priority = (osPriority_t) osPriorityNormal, };
+		.stack_size = 512 * 4, .priority = (osPriority_t) osPriorityNormal, };
 /* USER CODE BEGIN PV */
 extern char key;
 char hold[5];
@@ -80,6 +81,7 @@ int detected = 0;
 
 // Define a event flag for LCD
 osEventFlagsId_t lcdEvent;
+SemaphoreHandle_t xSemaphore;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -140,6 +142,8 @@ int main(void) {
 
 	// Create the event flag
 	lcdEvent = osEventFlagsNew(NULL);
+	xSemaphore = xSemaphoreCreateMutex();
+	xSemaphoreGive(xSemaphore);
 
 	/* USER CODE BEGIN RTOS_MUTEX */
 	/* add mutexes, ... */
@@ -368,13 +372,16 @@ void StartKeypadTask(void *argument) {
 	char code[5];
 	int numInputs = 0;
 
+	osDelay(1000);
+
 	for (;;) {
+
+		while(!xSemaphoreTake(xSemaphore, ( TickType_t ) 100000000 ) == pdTRUE ) {osDelay(100);}
 		key = Get_Key();
 		hold[numInputs] = key;
 		numInputs++;
-
 		// Signal LCDTask to update the display after pressing each key
-		osEventFlagsSet(lcdEvent, 0x01);
+		//osEventFlagsSet(lcdEvent, 0x01);
 
 		if (numInputs == 4) {
 			if (armed == 0) {
@@ -396,7 +403,9 @@ void StartKeypadTask(void *argument) {
 			}
 			numInputs = 0;
 		}
-		osDelay(100);
+
+		xSemaphoreGive(xSemaphore);
+		osDelay(10);
 	}
 
 	/* USER CODE END 5 */
@@ -419,13 +428,13 @@ void StartLCDTask(void *argument) {
 	SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
 	SSD1306_UpdateScreen();
 
-	osDelay(1000);
+//	osDelay(1000);
 
 	/* Infinite loop */
 	for (;;) {
 		// Wait for a keypad event
-		osEventFlagsWait(lcdEvent, 0x01, osFlagsWaitAny, osWaitForever);
-
+		//osEventFlagsWait(lcdEvent, 0x01, osFlagsWaitAny, osWaitForever);
+		while(!xSemaphoreTake(xSemaphore, ( TickType_t ) 100000000 ) == pdTRUE ) {osDelay(100);}
 		SSD1306_Fill(SSD1306_COLOR_BLACK);
 		SSD1306_GotoXY(0, 0);
 		SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
@@ -439,8 +448,7 @@ void StartLCDTask(void *argument) {
 		}
 
 		SSD1306_UpdateScreen();
-
-		osDelay(1000);
+		xSemaphoreGive(xSemaphore);
 	}
 
 	/*
@@ -477,6 +485,7 @@ void StartLEDsTask(void *argument) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_10, GPIO_PIN_RESET);
 		}
 
+		osDelay(10);
 		// Armed
 		while (!armed) {
 			// Turn off Green LED
