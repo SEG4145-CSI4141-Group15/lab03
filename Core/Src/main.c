@@ -552,6 +552,7 @@ void StartPIRTask(void *argument)
 					if(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {
 						xSemaphoreGive(xSemaphore);
 					}
+					// After detection, keypad loses functionality
 			}
 		}
 	}

@@ -1896,7 +1896,7 @@ void StartPIRTask(void *argument)
  8000ec6:	2200      	movs	r2, #0
  8000ec8:	2100      	movs	r1, #0
  8000eca:	f003 f96b 	bl	80041a4 <xQueueGenericSend>
-					}
+					// After detection, keypad loses functionality
 			}
 		}
 	}
