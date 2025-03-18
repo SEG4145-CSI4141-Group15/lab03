@@ -390,35 +390,36 @@ void StartKeypadTask(void *argument)
 
 	for (;;) {
 
-		while(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE) ) {osDelay(100);}
-		key = Get_Key();
-		hold[numInputs] = key;
-		numInputs++;
-		// Signal LCDTask to update the display after pressing each key
-		//osEventFlagsSet(lcdEvent, 0x01);
+		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE ) {
+			key = Get_Key();
+			hold[numInputs] = key;
+			numInputs++;
+			// Signal LCDTask to update the display after pressing each key
+			//osEventFlagsSet(lcdEvent, 0x01);
 
-		if (numInputs == 4) {
-			if (armed == 0) {
-				strcpy(code, hold);
-				armed = 1;
+			if (numInputs == 4) {
+				if (armed == 0) {
+					strcpy(code, hold);
+					armed = 1;
 
-			} else {
-				if (strcmp(code, hold) == 0) {
-					armed = 0;
-					detected = 0;
-					for (int i = 0; i < 4; i++) {
-						code[i] = '\0';
+				} else {
+					if (strcmp(code, hold) == 0) {
+						armed = 0;
+						detected = 0;
+						for (int i = 0; i < 4; i++) {
+							code[i] = '\0';
+						}
 					}
 				}
+
+				for (int i = 0; i < 4; i++) {
+					hold[i] = '\0';
+				}
+				numInputs = 0;
 			}
 
-			for (int i = 0; i < 4; i++) {
-				hold[i] = '\0';
-			}
-			numInputs = 0;
+			xSemaphoreGive(xSemaphore);
 		}
-
-		xSemaphoreGive(xSemaphore);
 		osDelay(10);
 	}
 
@@ -449,21 +450,23 @@ void StartLCDTask(void *argument)
 	for (;;) {
 		// Wait for a keypad event
 		//osEventFlagsWait(lcdEvent, 0x01, osFlagsWaitAny, osWaitForever);
-		while(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {osDelay(100);}
-		SSD1306_Fill(SSD1306_COLOR_BLACK);
-		SSD1306_GotoXY(0, 0);
-		SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
+		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE ) {
+			SSD1306_Fill(SSD1306_COLOR_BLACK);
+			SSD1306_GotoXY(0, 0);
+			SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
 
-		if (strlen(hold) > 0) {
+			if (strlen(hold) > 0) {
 
-			char stars[4][5] = { "*", "**", "***", "****" };
+				char stars[4][5] = { "*", "**", "***", "****" };
 
-			SSD1306_GotoXY(0, 30);
-			SSD1306_Puts(stars[strlen(hold) - 1], &Font_11x18, 1);
+				SSD1306_GotoXY(0, 30);
+				SSD1306_Puts(stars[strlen(hold) - 1], &Font_11x18, 1);
+			}
+
+			SSD1306_UpdateScreen();
+			xSemaphoreGive(xSemaphore);
 		}
-
-		SSD1306_UpdateScreen();
-		xSemaphoreGive(xSemaphore);
+		osDelay(10);
 	}
 
 	/*
@@ -526,16 +529,19 @@ void StartPIRTask(void *argument)
   /* USER CODE BEGIN StartPIRTask */
 	/* Infinite loop */
 	for (;;) {
-		while(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {osDelay(100);}
+		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE ) {
 		// If the PIR detects something, wait 60 seconds to let the user enter the code to disarm the system, otherwise sound the buzzer
-		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == GPIO_PIN_SET) {
-			// Delay 60 seconds
-			osDelay(2000);
+			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == GPIO_PIN_SET) {
+				// Delay 60 seconds
+				osDelay(2000);
 
-			if (armed) {
-				detected = 1;
+				if (armed) {
+					detected = 1;
+				}
 			}
+			xSemaphoreGive(xSemaphore);
 		}
+		osDelay(10);
 
 	}
   /* USER CODE END StartPIRTask */
