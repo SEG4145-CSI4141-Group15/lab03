@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include "fonts.h"
 #include "ssd1306.h"
+#include "semphr.h"
 
 /* USER CODE END Includes */
 
@@ -156,7 +157,7 @@ int main(void)
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-	/* add mutexes, ... */
+	xSemaphore = xSemaphoreCreateMutex();
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
@@ -389,7 +390,7 @@ void StartKeypadTask(void *argument)
 
 	for (;;) {
 
-		while(!xSemaphoreTake(xSemaphore, ( TickType_t ) 100000000 ) == pdTRUE ) {osDelay(100);}
+		while(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE) ) {osDelay(100);}
 		key = Get_Key();
 		hold[numInputs] = key;
 		numInputs++;
@@ -448,7 +449,7 @@ void StartLCDTask(void *argument)
 	for (;;) {
 		// Wait for a keypad event
 		//osEventFlagsWait(lcdEvent, 0x01, osFlagsWaitAny, osWaitForever);
-		while(!xSemaphoreTake(xSemaphore, ( TickType_t ) 100000000 ) == pdTRUE ) {osDelay(100);}
+		while(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {osDelay(100);}
 		SSD1306_Fill(SSD1306_COLOR_BLACK);
 		SSD1306_GotoXY(0, 0);
 		SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
@@ -525,6 +526,7 @@ void StartPIRTask(void *argument)
   /* USER CODE BEGIN StartPIRTask */
 	/* Infinite loop */
 	for (;;) {
+		while(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {osDelay(100);}
 		// If the PIR detects something, wait 60 seconds to let the user enter the code to disarm the system, otherwise sound the buzzer
 		if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == GPIO_PIN_SET) {
 			// Delay 60 seconds
@@ -554,6 +556,7 @@ void StartBuzzerTask(void *argument)
 		while (detected) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
 		}
+		osDelay(10);
 		while (!detected) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
 		}
