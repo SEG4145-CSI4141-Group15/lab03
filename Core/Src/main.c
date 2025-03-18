@@ -89,6 +89,7 @@ const osThreadAttr_t BuzzerTask_attributes = {
 extern char key;
 char hold[5];
 int armed = 0;
+int sync_LCD = 0;
 char armed_messages[2][10] = { "Not Armed", "Armed" };
 
 // `detected=1` if the PIR sensor detects something
@@ -390,35 +391,38 @@ void StartKeypadTask(void *argument)
 
 	for (;;) {
 
-		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE ) {
-			key = Get_Key();
-			hold[numInputs] = key;
-			numInputs++;
-			// Signal LCDTask to update the display after pressing each key
-			//osEventFlagsSet(lcdEvent, 0x01);
+		if(sync_LCD == 0) {
+			if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE && sync_LCD == 0) {
+				key = Get_Key();
+				hold[numInputs] = key;
+				numInputs++;
+				// Signal LCDTask to update the display after pressing each key
+				//osEventFlagsSet(lcdEvent, 0x01);
 
-			if (numInputs == 4) {
-				if (armed == 0) {
-					strcpy(code, hold);
-					armed = 1;
+				if (numInputs == 4) {
+					if (armed == 0) {
+						strcpy(code, hold);
+						armed = 1;
 
-				} else {
-					if (strcmp(code, hold) == 0) {
-						armed = 0;
-						detected = 0;
-						for (int i = 0; i < 4; i++) {
-							code[i] = '\0';
+					} else {
+						if (strcmp(code, hold) == 0) {
+							armed = 0;
+							detected = 0;
+							for (int i = 0; i < 4; i++) {
+								code[i] = '\0';
+							}
 						}
 					}
+
+					for (int i = 0; i < 4; i++) {
+						hold[i] = '\0';
+					}
+					numInputs = 0;
 				}
 
-				for (int i = 0; i < 4; i++) {
-					hold[i] = '\0';
-				}
-				numInputs = 0;
+				xSemaphoreGive(xSemaphore);
+				sync_LCD = 1;
 			}
-
-			xSemaphoreGive(xSemaphore);
 		}
 		osDelay(10);
 	}
@@ -436,8 +440,8 @@ void StartKeypadTask(void *argument)
 void StartLCDTask(void *argument)
 {
   /* USER CODE BEGIN StartLCDTask */
-	SSD1306_Init();
-
+	SSD1306_Init()
+;
 	// Initial message on the LCD
 	SSD1306_Fill(SSD1306_COLOR_BLACK);
 	SSD1306_GotoXY(0, 0);
@@ -449,8 +453,8 @@ void StartLCDTask(void *argument)
 	/* Infinite loop */
 	for (;;) {
 		// Wait for a keypad event
-		//osEventFlagsWait(lcdEvent, 0x01, osFlagsWaitAny, osWaitForever);
-		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE ) {
+		//osEventFlagsWait(lcdEvent, 0x01, osFlagsWaitAny, osWaitForever)}
+		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE) {
 			SSD1306_Fill(SSD1306_COLOR_BLACK);
 			SSD1306_GotoXY(0, 0);
 			SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
@@ -465,8 +469,9 @@ void StartLCDTask(void *argument)
 
 			SSD1306_UpdateScreen();
 			xSemaphoreGive(xSemaphore);
+			sync_LCD = 0;
 		}
-		osDelay(10);
+		osDelay(100);
 	}
 
 	/*
@@ -496,7 +501,7 @@ void StartLEDsTask(void *argument)
 	/* Infinite loop */
 	for (;;) {
 		// Not armed
-		while (armed) {
+		if (armed) {
 			// Turn on Green LED
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_SET);
 
@@ -506,7 +511,7 @@ void StartLEDsTask(void *argument)
 
 		osDelay(10);
 		// Armed
-		while (!armed) {
+		if (!armed) {
 			// Turn off Green LED
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, GPIO_PIN_RESET);
 
@@ -528,22 +533,33 @@ void StartPIRTask(void *argument)
 {
   /* USER CODE BEGIN StartPIRTask */
 	/* Infinite loop */
+	osDelay(1000);
 	for (;;) {
-		if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE ) {
+		if(sync_LCD == 0) {
+			if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE) {
 		// If the PIR detects something, wait 60 seconds to let the user enter the code to disarm the system, otherwise sound the buzzer
-			if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == GPIO_PIN_SET) {
+				if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == GPIO_PIN_SET) {
 				// Delay 60 seconds
-				osDelay(2000);
+					if (armed) {
+						xSemaphoreGive(xSemaphore);
+						osDelay(2000);
+						if(armed) {
+							detected = 1;
+							HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+						}
+					}
 
-				if (armed) {
-					detected = 1;
-				}
+					if(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {
+						xSemaphoreGive(xSemaphore);
+					}
 			}
-			xSemaphoreGive(xSemaphore);
 		}
-		osDelay(10);
-
 	}
+
+	osDelay(100);
+
+	//osDelay(delay);
+}
   /* USER CODE END StartPIRTask */
 }
 
