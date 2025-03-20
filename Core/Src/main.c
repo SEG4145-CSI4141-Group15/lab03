@@ -89,6 +89,7 @@ const osThreadAttr_t BuzzerTask_attributes = {
 extern char key;
 char hold[5];
 int armed = 0;
+int count_value = 0;
 int sync_LCD = 0;
 char armed_messages[2][10] = { "Not Armed", "Armed" };
 
@@ -408,6 +409,14 @@ void StartKeypadTask(void *argument)
 				if (numInputs == 4) {
 					if (armed == 0) {
 						strcpy(code, hold);
+						xSemaphoreGive(xSemaphore);
+						for (int i = 0; i < 4; i++) {
+							hold[i] = '\0';
+						}
+						for(count_value = 60; count_value > 0; count_value--) {
+							osDelay(1000);
+						}
+
 						armed = 1;
 
 					} else {
@@ -473,6 +482,12 @@ void StartLCDTask(void *argument)
 				SSD1306_Puts(stars[strlen(hold) - 1], &Font_11x18, 1);
 			}
 
+			if(count_value > 0) {
+				char str[3];
+				sprintf(str, "%d", count_value);
+				SSD1306_GotoXY(0, 30);
+				SSD1306_Puts(str, &Font_11x18, 1);
+			}
 
 			SSD1306_UpdateScreen();
 			xSemaphoreGive(xSemaphore);
