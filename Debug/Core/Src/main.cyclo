@@ -2,10 +2,10 @@
 ../Core/Src/main.c:221:6:SystemClock_Config	3
 ../Core/Src/main.c:269:13:MX_I2C1_Init	2
 ../Core/Src/main.c:303:13:MX_GPIO_Init	1
-../Core/Src/main.c:382:6:StartKeypadTask	9
-../Core/Src/main.c:440:6:StartLCDTask	3
-../Core/Src/main.c:497:6:StartLEDsTask	3
-../Core/Src/main.c:532:6:StartPIRTask	5
-../Core/Src/main.c:570:6:StartBuzzerTask	2
-../Core/Src/main.c:606:6:HAL_TIM_PeriodElapsedCallback	2
-../Core/Src/main.c:623:6:Error_Handler	1
+../Core/Src/main.c:388:6:StartKeypadTask	9
+../Core/Src/main.c:446:6:StartLCDTask	3
+../Core/Src/main.c:504:6:StartLEDsTask	3
+../Core/Src/main.c:539:6:StartPIRTask	5
+../Core/Src/main.c:577:6:StartBuzzerTask	2
+../Core/Src/main.c:613:6:HAL_TIM_PeriodElapsedCallback	2
+../Core/Src/main.c:630:6:Error_Handler	1
