@@ -6,6 +6,6 @@
 ../Core/Src/main.c:440:6:StartLCDTask	48	static
 ../Core/Src/main.c:497:6:StartLEDsTask	16	static
 ../Core/Src/main.c:532:6:StartPIRTask	16	static
-../Core/Src/main.c:574:6:StartBuzzerTask	16	static
-../Core/Src/main.c:598:6:HAL_TIM_PeriodElapsedCallback	16	static
-../Core/Src/main.c:615:6:Error_Handler	4	static,ignoring_inline_asm
+../Core/Src/main.c:570:6:StartBuzzerTask	16	static
+../Core/Src/main.c:606:6:HAL_TIM_PeriodElapsedCallback	16	static
+../Core/Src/main.c:623:6:Error_Handler	4	static,ignoring_inline_asm

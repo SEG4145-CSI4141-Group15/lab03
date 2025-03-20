@@ -55,7 +55,7 @@ osThreadId_t KeypadTaskHandle;
 const osThreadAttr_t KeypadTask_attributes = {
   .name = "KeypadTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for LCDTask */
 osThreadId_t LCDTaskHandle;
@@ -76,7 +76,7 @@ osThreadId_t PIRTaskHandle;
 const osThreadAttr_t PIRTask_attributes = {
   .name = "PIRTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 /* Definitions for BuzzerTask */
 osThreadId_t BuzzerTaskHandle;
@@ -424,7 +424,7 @@ void StartKeypadTask(void *argument)
 				sync_LCD = 1;
 			}
 		}
-		osDelay(10);
+		osDelay(300);
 	}
 
   /* USER CODE END 5 */
@@ -440,15 +440,15 @@ void StartKeypadTask(void *argument)
 void StartLCDTask(void *argument)
 {
   /* USER CODE BEGIN StartLCDTask */
-	SSD1306_Init()
-;
+	SSD1306_Init();
+
 	// Initial message on the LCD
 	SSD1306_Fill(SSD1306_COLOR_BLACK);
 	SSD1306_GotoXY(0, 0);
 	SSD1306_Puts(armed_messages[armed], &Font_11x18, 1);
 	SSD1306_UpdateScreen();
 
-//	osDelay(1000);
+	osDelay(100);
 
 	/* Infinite loop */
 	for (;;) {
@@ -536,12 +536,11 @@ void StartPIRTask(void *argument)
 	osDelay(1000);
 	for (;;) {
 		if(sync_LCD == 0) {
-			if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE) {
+			//if(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE) {
 		// If the PIR detects something, wait 60 seconds to let the user enter the code to disarm the system, otherwise sound the buzzer
 				if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_7) == GPIO_PIN_SET) {
 				// Delay 60 seconds
 					if (armed) {
-						xSemaphoreGive(xSemaphore);
 						osDelay(2000);
 						if(armed) {
 							detected = 1;
@@ -549,17 +548,14 @@ void StartPIRTask(void *argument)
 						}
 					}
 
-					if(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {
-						xSemaphoreGive(xSemaphore);
-					}
+					//if(!(xSemaphoreTake(xSemaphore, ( TickType_t ) 10 ) == pdTRUE)) {
+						//xSemaphoreGive(xSemaphore);
+					//}
 					// After detection, keypad loses functionality
 			}
-		}
+		//}
 	}
-
 	osDelay(100);
-
-	//osDelay(delay);
 }
   /* USER CODE END StartPIRTask */
 }
@@ -574,15 +570,27 @@ void StartPIRTask(void *argument)
 void StartBuzzerTask(void *argument)
 {
   /* USER CODE BEGIN StartBuzzerTask */
+
 	/* Infinite loop */
 	for (;;) {
-		while (detected) {
+
+		if(detected) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+		} else {
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
+		}
+
+		osDelay(100);
+
+		/*while (detected) {
+			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+			osDelay(100);
 		}
 		osDelay(10);
 		while (!detected) {
 			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_RESET);
-		}
+			osDelay(100);
+		}*/
 	}
   /* USER CODE END StartBuzzerTask */
 }
